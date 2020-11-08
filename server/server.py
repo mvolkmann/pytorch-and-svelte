@@ -80,5 +80,6 @@ async def classify_image(file: UploadFile = File(...)) -> Result:
         label = labels[i]
         confidence = percentages[i].item()
         result.append((confidence, label))
+    print(result)
 
     return result

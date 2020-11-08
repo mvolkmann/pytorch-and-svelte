@@ -24,8 +24,10 @@
 </script>
 
 <main>
-  <h1>Upload an image to evaluate.</h1>
-  <input type="file" accept=".jpg, .jpeg, .png" on:change={handleFile} />
+  <h1>Choose an image to classify.</h1>
+  <!-- PNG images seem to have 4 channels which breaks
+       the image preprocessing done in the server. -->
+  <input type="file" accept=".jpg, .jpeg" on:change={handleFile} />
   {#if imgSrc}<img src={imgSrc} alt="selected" />{/if}
   {#each classifications as [confidence, label]}
     <div>{label} - {confidence.toFixed(2)}%</div>
