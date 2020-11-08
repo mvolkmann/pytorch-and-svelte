@@ -1,15 +1,13 @@
 from io import BytesIO
-from typing import List, Tuple
+from typing import cast, List, Tuple
 
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-import numpy as np
-from PIL import Image
-from numpy.lib.financial import pv
+from PIL import Image  # type: ignore
 from pydantic import BaseModel
 import torch
 import torch.nn.functional as F  # for softmax
-from torchvision import transforms
+from torchvision import transforms  # type: ignore
 
 Classification = Tuple[float, str]
 Result = List[Classification]
@@ -60,9 +58,9 @@ app.add_middleware(CORSMiddleware, allow_origins='*')
 @app.post('/classify')
 # async def classify_image(file: UploadFile = File(...)) -> Result:
 # async def classify_image(file: UploadFile = File(...)) -> Model:
-async def classify_image(file: UploadFile = File(...)):
-    bytes = await file.read()
-    pil_image = Image.open(BytesIO(bytes))
+async def classify_image(file: UploadFile = File(...)) -> Result:
+    data = cast(bytes, await file.read())
+    pil_image = Image.open(BytesIO(data))
     image_t = preprocess(pil_image)
 
     # Create a 1D tensor object from the image
@@ -72,14 +70,14 @@ async def classify_image(file: UploadFile = File(...)):
 
     # Perform inference to get predicted classes.
     # "out" is set to a tensor that contains percentage predictions
-    # for each of the 1000 possible labels.
+    # for each of the 1000 possible ImageNet classes.
     out = model(batch_t)
 
     # Get the 1000 possible labels from a text file.
     with open('./imagenet_classes.txt') as f:
         labels = [line.strip() for line in f.readlines()]
 
-    # Compute the percentage certainty from each tensor value.
+    # Compute the percentage certainty for each tensor value.
     percentages = F.softmax(out, dim=1)[0] * 100
 
     # Get the top predictions.
