@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+uvicorn server:app --port 1919 --reload
