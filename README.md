@@ -1,4 +1,10 @@
-# PyTorch Web App
+# pytorch-and-svelte
+
+This project includes a Svelte web app and a Python FastAPI server.
+The Svelte web app allows users to select an image file
+to be classified using a PyTorch neural network.
+The Python FastAPI server supports image file upload
+and returns classification information about the image.
 
 The server requires the following installs:
 

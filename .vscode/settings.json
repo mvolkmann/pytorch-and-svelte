@@ -3,6 +3,7 @@
     "Unprocessable",
     "fastapi",
     "pydantic",
+    "pytorch",
     "uvicorn"
   ]
 }
