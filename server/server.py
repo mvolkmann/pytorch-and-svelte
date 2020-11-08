@@ -4,7 +4,6 @@ from typing import cast, List, Tuple
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image  # type: ignore
-from pydantic import BaseModel
 import torch
 import torch.nn.functional as F  # for softmax
 from torchvision import transforms  # type: ignore
@@ -12,27 +11,22 @@ from torchvision import transforms  # type: ignore
 Classification = Tuple[float, str]
 Result = List[Classification]
 
-class Model(BaseModel):
-    result: Result
-
-class FileUpload(BaseModel):
-    file: UploadFile = File(...)
-
-# Load a neural network model.
+# Load an instance of the ResNet neural network.
 model = torch.hub.load('pytorch/vision:master', 'resnet101', pretrained=True)
 
 # Put the network into "eval" mode because we want to
 # evaluate input rather than perform training.
 model.eval()
 
-# Prepare the image for input to the network.
+# Create a function that prepares an image
+# for input to the ResNet network
+# so it matches the images used for training.
 preprocess = transforms.Compose([
-    # Resize the image to reduce the number of pixels to be
-    # processed and match the image sizes used for training.
+    # Resize the image to reduce the number of pixels to be processed.
     transforms.Resize(256),
 
     # Crop the image to a smaller size about its center,
-    # removing unnecessary pixels at the edges.
+    # removing possibly unnecessary pixels at the edges.
     transforms.CenterCrop(224),
 
     # Convert the image data to a tensor object.
@@ -47,18 +41,20 @@ preprocess = transforms.Compose([
     )
 ])
 
-# JSON in request bodies of POST and PUT requests
-# is validated against this type definition.
-# When validation fails, the response status
-# is set to 422 Unprocessable Entity.
+# Get the 1000 possible labels used to
+# train the ResNet network from a text file.
+with open('./imagenet_classes.txt') as f:
+    labels = [line.strip() for line in f.readlines()]
+
 app = FastAPI()
+
+# Enable web apps from other domains to send requests.
 app.add_middleware(CORSMiddleware, allow_origins='*')
 
-# @app.post('/classify', response_model=FileUpload)
-@app.post('/classify')
-# async def classify_image(file: UploadFile = File(...)) -> Result:
-# async def classify_image(file: UploadFile = File(...)) -> Model:
+@app.post('/classify', response_model=Result)
 async def classify_image(file: UploadFile = File(...)) -> Result:
+    # Convert the image in the request body to the
+    # proper format to use as input to the ResNet network.
     data = cast(bytes, await file.read())
     pil_image = Image.open(BytesIO(data))
     image_t = preprocess(pil_image)
@@ -73,10 +69,6 @@ async def classify_image(file: UploadFile = File(...)) -> Result:
     # for each of the 1000 possible ImageNet classes.
     out = model(batch_t)
 
-    # Get the 1000 possible labels from a text file.
-    with open('./imagenet_classes.txt') as f:
-        labels = [line.strip() for line in f.readlines()]
-
     # Compute the percentage certainty for each tensor value.
     percentages = F.softmax(out, dim=1)[0] * 100
 
@@ -88,4 +80,5 @@ async def classify_image(file: UploadFile = File(...)) -> Result:
         label = labels[i]
         confidence = percentages[i].item()
         result.append((confidence, label))
+
     return result
