@@ -4,6 +4,7 @@
     "fastapi",
     "pydantic",
     "pytorch",
+    "unsqueeze",
     "uvicorn"
   ]
 }

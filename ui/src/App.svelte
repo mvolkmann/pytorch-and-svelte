@@ -13,7 +13,7 @@
   async function classifyImage() {
     try {
       const formData = new FormData();
-      formData.append('image', file);
+      formData.append('file', file);
       const res = await fetch(CLASSIFY_URL, {method: 'POST', body: formData});
       if (!res.ok) throw new Error(await res.text());
       classifications = await res.json();
@@ -28,7 +28,7 @@
   <input type="file" accept=".jpg, .jpeg, .png" on:change={handleFile} />
   {#if imgSrc}<img src={imgSrc} alt="selected" />{/if}
   {#each classifications as [confidence, label]}
-    <div>{label} - {(confidence * 100).toFixed(2)}%</div>
+    <div>{label} - {confidence.toFixed(2)}%</div>
   {/each}
 </main>
 
