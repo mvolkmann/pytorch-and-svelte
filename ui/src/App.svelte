@@ -14,7 +14,9 @@
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch(CLASSIFY_URL, {method: 'POST', body: formData});
+      let url = CLASSIFY_URL;
+      if (file.name.endsWith('.png')) url += '?png=True';
+      const res = await fetch(url, {method: 'POST', body: formData});
       if (!res.ok) throw new Error(await res.text());
       classifications = await res.json();
     } catch (e) {
@@ -24,10 +26,10 @@
 </script>
 
 <main>
-  <h1>Choose an image to classify.</h1>
+  <h1>Choose an image to classify</h1>
   <!-- PNG images seem to have 4 channels which breaks
        the image preprocessing done in the server. -->
-  <input type="file" accept=".jpg, .jpeg" on:change={handleFile} />
+  <input type="file" accept=".jpg, .jpeg, .png" on:change={handleFile} />
   {#if imgSrc}<img src={imgSrc} alt="selected" />{/if}
   {#each classifications as [confidence, label]}
     <div>{label} - {confidence.toFixed(2)}%</div>
