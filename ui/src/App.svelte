@@ -14,9 +14,7 @@
     try {
       const formData = new FormData();
       formData.append('file', file);
-      let url = CLASSIFY_URL;
-      if (file.name.endsWith('.png')) url += '?png=True';
-      const res = await fetch(url, {method: 'POST', body: formData});
+      const res = await fetch(CLASSIFY_URL, {method: 'POST', body: formData});
       if (!res.ok) throw new Error(await res.text());
       classifications = await res.json();
     } catch (e) {

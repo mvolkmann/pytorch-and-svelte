@@ -70,16 +70,13 @@ app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins='*')
 
 @app.post('/classify', response_model=Result)
-async def classify_image(
-        png: bool = False,
-        file: UploadFile = File(...)) -> Result:
-
+async def classify_image(file: UploadFile = File(...)) -> Result:
     # Convert the image in the request body to the
     # proper format to use as input to the ResNet network.
     data = cast(bytes, await file.read())
     pil_image = Image.open(BytesIO(data))
 
-    if png:
+    if pil_image.mode == 'RGBA':
         pil_image = remove_alpha(pil_image)
         # plt.imshow(pil_image)
         # plt.show()
