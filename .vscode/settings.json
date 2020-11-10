@@ -2,7 +2,9 @@
   "cSpell.words": [
     "Unprocessable",
     "fastapi",
+    "numpy",
     "pydantic",
+    "pyplot",
     "pytorch",
     "unsqueeze",
     "uvicorn"

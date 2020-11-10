@@ -5,7 +5,6 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from matplotlib import pyplot as plt
 import numpy as np
-from numpy.lib.financial import pv  # type: ignore
 from PIL import Image
 import torch
 import torch.nn.functional as F  # for softmax
@@ -15,19 +14,35 @@ Classification = Tuple[float, str]
 Result = List[Classification]
 
 def remove_alpha(src: Image) -> Image:
-    '''
-    Return a new image that matches in the input image,
-    but removes the alpha channel.
-    See https://stackoverflow.com/questions/9166400/
-    convert-rgba-png-to-rgb-with-pil/9166671#9166671.
-    '''
-    x = np.array(src)
-    r, g, b, a = np.rollaxis(x, axis=-1)
-    r[a == 0] = 0
-    g[a == 0] = 0
-    b[a == 0] = 0
-    x = np.dstack([r, g, b])
-    return Image.fromarray(x, 'RGB')
+    # Convert the image to a NumPy array.
+    rgba = np.array(src)
+
+    row, col, channels = rgba.shape
+    if channels == 3:
+        return rgba
+    assert channels == 4, 'RGBA images have 4 channels.'
+
+    # Create a new NumPy array to hold the RGB representation.
+    rgb = np.zeros((row, col, 3), dtype='float32')
+
+    # Split out the data from each channel.
+    # Red values are in channel 0, green in 1, blue in 2, and alpha in 3.
+    r, g, b, a = rgba[:, :, 0], rgba[:, :, 1], rgba[:, :, 2], rgba[:, :, 3]
+
+    # Convert the alpha values from a range of 0-255 to 0-1.
+    a = np.asarray(a, dtype='float32') / 255.0
+
+    # Multiply all red, green, and blue values
+    # by the corresponding alpha value.
+    bg_red, bg_green, bg_blue = 0, 0, 0  # black
+    rgb[:, :, 0] = r * a + (1.0 - a) * bg_red  # channel 0
+    rgb[:, :, 1] = g * a + (1.0 - a) * bg_green  # channel 1
+    rgb[:, :, 2] = b * a + (1.0 - a) * bg_blue  # channel 2
+
+    # Convert the new color values to unsigned int values.
+    rgb_ints = rgb.astype(np.uint8)
+
+    return Image.fromarray(rgb_ints, 'RGB')
 
 # Load an instance of the ResNet neural network.
 model = torch.hub.load('pytorch/vision:master', 'resnet101', pretrained=True)
@@ -78,6 +93,8 @@ async def classify_image(file: UploadFile = File(...)) -> Result:
 
     if pil_image.mode == 'RGBA':
         pil_image = remove_alpha(pil_image)
+        # TODO: Is this better or worse?
+        # pil_image = pil_image.convert('RGB')
         # plt.imshow(pil_image)
         # plt.show()
 
